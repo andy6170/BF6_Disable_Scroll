@@ -9,15 +9,15 @@
   }
 
   plugin.initialize = function () {
-    // Save previous overflow values
-    previous.body = document.body.style.overflow;
-    previous.html = document.documentElement.style.overflow;
+    // Save previous styles
+    previous.htmlOverflow = document.documentElement.style.overflow;
+    previous.bodyOverflow = document.body.style.overflow;
 
-    // Disable scrolling
-    document.body.style.overflow = "hidden";
+    // Disable scrolling via CSS
     document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
 
-    // Extra safety: block wheel + touch scrolling
+    // Block wheel + touch scrolling
     window.addEventListener("wheel", preventScroll, { passive: false });
     window.addEventListener("touchmove", preventScroll, { passive: false });
 
@@ -25,11 +25,10 @@
   };
 
   plugin.dispose = function () {
-    // Restore overflow
-    document.body.style.overflow = previous.body || "";
-    document.documentElement.style.overflow = previous.html || "";
+    // Restore styles
+    document.documentElement.style.overflow = previous.htmlOverflow || "";
+    document.body.style.overflow = previous.bodyOverflow || "";
 
-    // Remove listeners
     window.removeEventListener("wheel", preventScroll);
     window.removeEventListener("touchmove", preventScroll);
 
