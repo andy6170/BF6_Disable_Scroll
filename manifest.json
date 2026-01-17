@@ -1,8 +1,8 @@
 {
   "id": "bf-portal-disable-scrolling",
   "name": "BF6 Unlimited Variables",
-  "version": "1.0.0",
-  "description": "Adds a Variable Manager allowing for unlimited variables",
+  "version": "0.1.0",
+  "description": "Disables scrolling to prevent accidental page scrolling when using the editor",
   "main": "index.js",
   "author": "andy6170"
 }
