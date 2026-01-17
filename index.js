@@ -1,37 +1,48 @@
 (function () {
-  const pluginId = "bf-portal-disable-scrolling";
+  const pluginId = "bf-portal-disable-page-scroll";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
   let previous = {};
+  let wheelHandler = null;
 
-  function preventScroll(e) {
-    e.preventDefault();
+  function isInsideBlockly(e) {
+    return e.target.closest?.(".blocklySvg, .blocklyWidgetDiv");
   }
 
   plugin.initialize = function () {
+    console.info("[DisableScrollPlugin] Initializing…");
+
     // Save previous styles
     previous.htmlOverflow = document.documentElement.style.overflow;
     previous.bodyOverflow = document.body.style.overflow;
 
-    // Disable scrolling via CSS
+    // Disable page scroll
     document.documentElement.style.overflow = "hidden";
     document.body.style.overflow = "hidden";
 
-    // Block wheel + touch scrolling
-    window.addEventListener("wheel", preventScroll, { passive: false });
-    window.addEventListener("touchmove", preventScroll, { passive: false });
+    // Block wheel scrolling unless it's inside Blockly
+    wheelHandler = function (e) {
+      if (!isInsideBlockly(e)) {
+        e.preventDefault();
+      }
+    };
 
-    console.info("[DisableScrollPlugin] Scrolling disabled");
+    window.addEventListener("wheel", wheelHandler, { passive: false });
+
+    console.info("[DisableScrollPlugin] Page scrolling disabled (Blockly preserved)");
   };
 
   plugin.dispose = function () {
-    // Restore styles
+    console.info("[DisableScrollPlugin] Disposing…");
+
     document.documentElement.style.overflow = previous.htmlOverflow || "";
     document.body.style.overflow = previous.bodyOverflow || "";
 
-    window.removeEventListener("wheel", preventScroll);
-    window.removeEventListener("touchmove", preventScroll);
+    if (wheelHandler) {
+      window.removeEventListener("wheel", wheelHandler);
+      wheelHandler = null;
+    }
 
-    console.info("[DisableScrollPlugin] Scrolling restored");
+    console.info("[DisableScrollPlugin] Page scrolling restored");
   };
 })();
