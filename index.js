@@ -1,46 +1,43 @@
 (function () {
-  const pluginId = "bf-portal-disable-page-scroll";
+  const pluginId = "bf-portal-disable-scrolling";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
   let previous = {};
-  let wheelHandler = null;
+  let wheelBlocker = null;
 
-  function isInsideBlockly(e) {
-    return e.target.closest?.(".blocklySvg, .blocklyWidgetDiv");
-  }
-
-  plugin.initialize = function () {
+  plugin.initializeWorkspace = function () {
     console.info("[DisableScrollPlugin] Initializing…");
 
     // Save previous styles
-    previous.htmlOverflow = document.documentElement.style.overflow;
     previous.bodyOverflow = document.body.style.overflow;
+    previous.htmlOverflow = document.documentElement.style.overflow;
 
-    // Disable page scroll
-    document.documentElement.style.overflow = "hidden";
+    // Disable page scrolling
     document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
 
-    // Block wheel scrolling unless it's inside Blockly
-    wheelHandler = function (e) {
-      if (!isInsideBlockly(e)) {
-        e.preventDefault();
-      }
+    // Block wheel scrolling at document level
+    wheelBlocker = function (e) {
+      // Allow Blockly editor to handle its own scrolling
+      if (e.target.closest(".blocklySvg")) return;
+      e.preventDefault();
     };
 
-    window.addEventListener("wheel", wheelHandler, { passive: false });
+    document.addEventListener("wheel", wheelBlocker, { passive: false });
 
-    console.info("[DisableScrollPlugin] Page scrolling disabled (Blockly preserved)");
+    console.info("[DisableScrollPlugin] Page scrolling disabled");
   };
 
   plugin.dispose = function () {
     console.info("[DisableScrollPlugin] Disposing…");
 
-    document.documentElement.style.overflow = previous.htmlOverflow || "";
+    // Restore styles
     document.body.style.overflow = previous.bodyOverflow || "";
+    document.documentElement.style.overflow = previous.htmlOverflow || "";
 
-    if (wheelHandler) {
-      window.removeEventListener("wheel", wheelHandler);
-      wheelHandler = null;
+    if (wheelBlocker) {
+      document.removeEventListener("wheel", wheelBlocker);
+      wheelBlocker = null;
     }
 
     console.info("[DisableScrollPlugin] Page scrolling restored");
