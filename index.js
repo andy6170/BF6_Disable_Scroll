@@ -2,20 +2,37 @@
   const pluginId = "bf-portal-disable-scrolling";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
-  let previousOverflow = null;
+  let previous = {};
+
+  function preventScroll(e) {
+    e.preventDefault();
+  }
 
   plugin.initialize = function () {
-    // Save previous state so we can restore it
-    previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    // Save previous overflow values
+    previous.body = document.body.style.overflow;
+    previous.html = document.documentElement.style.overflow;
 
-    console.info("[DisableScrollPlugin] Page scrolling disabled");
+    // Disable scrolling
+    document.body.style.overflow = "hidden";
+    document.documentElement.style.overflow = "hidden";
+
+    // Extra safety: block wheel + touch scrolling
+    window.addEventListener("wheel", preventScroll, { passive: false });
+    window.addEventListener("touchmove", preventScroll, { passive: false });
+
+    console.info("[DisableScrollPlugin] Scrolling disabled");
   };
 
   plugin.dispose = function () {
-    // Restore original scroll behavior
-    document.body.style.overflow = previousOverflow || "";
+    // Restore overflow
+    document.body.style.overflow = previous.body || "";
+    document.documentElement.style.overflow = previous.html || "";
 
-    console.info("[DisableScrollPlugin] Page scrolling restored");
+    // Remove listeners
+    window.removeEventListener("wheel", preventScroll);
+    window.removeEventListener("touchmove", preventScroll);
+
+    console.info("[DisableScrollPlugin] Scrolling restored");
   };
 })();
