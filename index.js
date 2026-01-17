@@ -1,5 +1,5 @@
 (function () {
-  const pluginId = "bf-disable-page-scroll";
+  const pluginId = "bf-portal-disable-scrolling";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
   let previousOverflow = null;
