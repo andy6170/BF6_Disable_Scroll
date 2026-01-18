@@ -2,9 +2,9 @@
   const pluginId = "bf-portal-disable-scrolling";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
+  let active = false;
   let wheelBlocker = null;
   let observer = null;
-  let enabled = false;
   let previous = {};
 
   const ALLOWED_SCROLL_CONTAINERS = [
@@ -19,11 +19,11 @@
     return ALLOWED_SCROLL_CONTAINERS.some(sel => target.closest(sel));
   }
 
-  function enableScrollBlock() {
-    if (enabled) return;
-    enabled = true;
+  function enable() {
+    if (active) return;
+    active = true;
 
-    console.info("[DisableScrollPlugin] Enabling page scroll lock");
+    console.info("[DisableScrollPlugin] Enabling");
 
     previous.bodyOverflow = document.body.style.overflow;
     previous.htmlOverflow = document.documentElement.style.overflow;
@@ -31,7 +31,7 @@
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
-    wheelBlocker = function (e) {
+    wheelBlocker = (e) => {
       if (isInsideAllowedContainer(e.target)) return;
       e.preventDefault();
     };
@@ -39,11 +39,11 @@
     document.addEventListener("wheel", wheelBlocker, { passive: false });
   }
 
-  function disableScrollBlock() {
-    if (!enabled) return;
-    enabled = false;
+  function disable() {
+    if (!active) return;
+    active = false;
 
-    console.info("[DisableScrollPlugin] Restoring page scrolling");
+    console.info("[DisableScrollPlugin] Disabling");
 
     document.body.style.overflow = previous.bodyOverflow || "";
     document.documentElement.style.overflow = previous.htmlOverflow || "";
@@ -55,39 +55,28 @@
   }
 
   function checkBlocklyPresence() {
-    const blocklyRoot = document.querySelector(".blocklySvg");
-    if (blocklyRoot) {
-      enableScrollBlock();
-    } else {
-      disableScrollBlock();
-    }
+    const hasBlockly = document.querySelector(".blocklySvg");
+    if (hasBlockly) enable();
+    else disable();
   }
 
   plugin.initialize = function () {
-    console.info("[DisableScrollPlugin] Plugin loaded");
+    console.info("[DisableScrollPlugin] Initialized");
 
-    // Initial check
-    checkBlocklyPresence();
-
-    // Watch for SPA navigation / DOM swaps
-    observer = new MutationObserver(() => {
-      checkBlocklyPresence();
-    });
-
+    // Observe SPA DOM changes
+    observer = new MutationObserver(checkBlocklyPresence);
     observer.observe(document.body, {
       childList: true,
       subtree: true,
     });
+
+    // Initial check
+    checkBlocklyPresence();
   };
 
   plugin.dispose = function () {
-    console.info("[DisableScrollPlugin] Plugin disposed");
-
-    if (observer) {
-      observer.disconnect();
-      observer = null;
-    }
-
-    disableScrollBlock();
+    console.info("[DisableScrollPlugin] Disposed");
+    if (observer) observer.disconnect();
+    disable();
   };
 })();
