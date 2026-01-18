@@ -7,16 +7,28 @@
   let observer = null;
   let active = false;
 
-  const ALLOWED_SCROLL_CONTAINERS = [
-    ".blocklySvg",
-    ".blocklyToolboxContents",
-    ".blocklyFlyout",
-    ".blocklyWidgetDiv",
-    ".blocklyDropDownDiv",
-  ];
+  function canElementScroll(el) {
+    if (!el || el === document.body || el === document.documentElement) {
+      return false;
+    }
 
-  function isInsideAllowedContainer(target) {
-    return ALLOWED_SCROLL_CONTAINERS.some(sel => target.closest(sel));
+    const style = window.getComputedStyle(el);
+    const overflowY = style.overflowY;
+
+    if (overflowY !== "auto" && overflowY !== "scroll") {
+      return false;
+    }
+
+    return el.scrollHeight > el.clientHeight;
+  }
+
+  function hasScrollableAncestor(target) {
+    let el = target;
+    while (el && el !== document.body) {
+      if (canElementScroll(el)) return true;
+      el = el.parentElement;
+    }
+    return false;
   }
 
   function cleanup(reason) {
@@ -45,18 +57,23 @@
     previous.bodyOverflow = document.body.style.overflow;
     previous.htmlOverflow = document.documentElement.style.overflow;
 
+    // Disable page scrolling
     document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
 
     wheelBlocker = function (e) {
-      if (isInsideAllowedContainer(e.target)) return;
+      // ✅ Allow scroll if any ancestor can scroll
+      if (hasScrollableAncestor(e.target)) return;
+
+      // ❌ Otherwise block page scroll
       e.preventDefault();
     };
 
     document.addEventListener("wheel", wheelBlocker, { passive: false });
+
     active = true;
 
-    // 🔑 Watch for Blockly being removed (navigation away)
+    // Auto-cleanup when Blockly disappears
     observer = new MutationObserver(() => {
       if (!document.querySelector(".blocklySvg")) {
         cleanup("Blockly removed");
