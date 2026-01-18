@@ -1,43 +1,59 @@
 (function () {
-  const pluginId = "bf-portal-disable-scrolling";
+  const pluginId = "bf-portal-disable-page-scroll";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
-  let previous = {};
-  let wheelBlocker = null;
+  let previousHtmlOverflow = "";
+  let previousBodyOverflow = "";
+  let toolboxObserver = null;
 
-  plugin.initializeWorkspace = function () {
-    console.info("[DisableScrollPlugin] Initializing…");
+  function enableToolboxScroll() {
+    const toolbox = document.querySelector(".blocklyToolboxContents");
+    if (toolbox) {
+      toolbox.style.overflowY = "auto";
+      toolbox.style.maxHeight = "100%";
+      console.info("[DisableScrollPlugin] Toolbox scrolling restored");
+      return true;
+    }
+    return false;
+  }
 
-    // Save previous styles
-    previous.bodyOverflow = document.body.style.overflow;
-    previous.htmlOverflow = document.documentElement.style.overflow;
+  plugin.initialize = function () {
+    console.info("[DisableScrollPlugin] Initializing");
 
-    // Disable page scrolling
-    document.body.style.overflow = "hidden";
+    // Disable page scroll
+    previousHtmlOverflow = document.documentElement.style.overflow;
+    previousBodyOverflow = document.body.style.overflow;
+
     document.documentElement.style.overflow = "hidden";
-
-    // Block wheel scrolling at document level
-    wheelBlocker = function (e) {
-      // Allow Blockly editor to handle its own scrolling
-      if (e.target.closest(".blocklySvg")) return;
-      e.preventDefault();
-    };
-
-    document.addEventListener("wheel", wheelBlocker, { passive: false });
+    document.body.style.overflow = "hidden";
 
     console.info("[DisableScrollPlugin] Page scrolling disabled");
+
+    // Toolbox may not exist yet → observe DOM until it appears
+    if (!enableToolboxScroll()) {
+      toolboxObserver = new MutationObserver(() => {
+        if (enableToolboxScroll()) {
+          toolboxObserver.disconnect();
+          toolboxObserver = null;
+        }
+      });
+
+      toolboxObserver.observe(document.body, {
+        childList: true,
+        subtree: true,
+      });
+    }
   };
 
   plugin.dispose = function () {
-    console.info("[DisableScrollPlugin] Disposing…");
+    console.info("[DisableScrollPlugin] Disposing");
 
-    // Restore styles
-    document.body.style.overflow = previous.bodyOverflow || "";
-    document.documentElement.style.overflow = previous.htmlOverflow || "";
+    document.documentElement.style.overflow = previousHtmlOverflow || "";
+    document.body.style.overflow = previousBodyOverflow || "";
 
-    if (wheelBlocker) {
-      document.removeEventListener("wheel", wheelBlocker);
-      wheelBlocker = null;
+    if (toolboxObserver) {
+      toolboxObserver.disconnect();
+      toolboxObserver = null;
     }
 
     console.info("[DisableScrollPlugin] Page scrolling restored");
