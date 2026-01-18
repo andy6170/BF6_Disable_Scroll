@@ -2,29 +2,24 @@
   const pluginId = "bf-portal-disable-scrolling";
   const plugin = BF2042Portal.Plugins.getPlugin(pluginId);
 
-  let previous = {};
   let wheelBlocker = null;
-  let observer = null;
-  let enabled = false;
+  let active = false;
 
-  function isBlocklyActive() {
+  function isBlocklyPage() {
     return !!document.querySelector(".blocklySvg");
   }
 
-  function enableScrollLock() {
-    if (enabled) return;
-    enabled = true;
+  function disablePageScroll() {
+    if (active) return;
+    active = true;
 
-    console.info("[DisableScrollPlugin] Enabling scroll lock");
+    console.info("[DisableScrollPlugin] Disabling page scroll");
 
-    previous.bodyOverflow = document.body.style.overflow;
-    previous.htmlOverflow = document.documentElement.style.overflow;
-
-    document.body.style.overflow = "hidden";
     document.documentElement.style.overflow = "hidden";
+    document.body.style.overflow = "hidden";
 
     wheelBlocker = function (e) {
-      // Allow Blockly & toolbox scrolling
+      // Allow Blockly + toolbox scrolling
       if (
         e.target.closest(".blocklySvg") ||
         e.target.closest(".blocklyToolboxContents")
@@ -37,14 +32,14 @@
     document.addEventListener("wheel", wheelBlocker, { passive: false });
   }
 
-  function disableScrollLock() {
-    if (!enabled) return;
-    enabled = false;
+  function enablePageScroll() {
+    if (!active) return;
+    active = false;
 
-    console.info("[DisableScrollPlugin] Disabling scroll lock");
+    console.info("[DisableScrollPlugin] Restoring page scroll");
 
-    document.body.style.overflow = previous.bodyOverflow || "";
-    document.documentElement.style.overflow = previous.htmlOverflow || "";
+    document.documentElement.style.overflow = "";
+    document.body.style.overflow = "";
 
     if (wheelBlocker) {
       document.removeEventListener("wheel", wheelBlocker);
@@ -52,39 +47,38 @@
     }
   }
 
-  function evaluateState() {
-    if (isBlocklyActive()) {
-      enableScrollLock();
+  function updateState() {
+    if (isBlocklyPage()) {
+      disablePageScroll();
     } else {
-      disableScrollLock();
+      enablePageScroll();
     }
   }
 
   plugin.initialize = function () {
-    console.info("[DisableScrollPlugin] Initializing");
+    console.info("[DisableScrollPlugin] Plugin loaded");
 
-    // Watch for SPA DOM changes
-    observer = new MutationObserver(() => {
-      evaluateState();
-    });
+    // Initial check
+    updateState();
 
+    // Watch for SPA navigation / DOM changes
+    const observer = new MutationObserver(updateState);
     observer.observe(document.body, {
       childList: true,
       subtree: true,
     });
 
-    // Initial check
-    evaluateState();
+    plugin._observer = observer;
   };
 
   plugin.dispose = function () {
-    console.info("[DisableScrollPlugin] Disposing");
+    console.info("[DisableScrollPlugin] Plugin disposed");
 
-    if (observer) {
-      observer.disconnect();
-      observer = null;
+    enablePageScroll();
+
+    if (plugin._observer) {
+      plugin._observer.disconnect();
+      plugin._observer = null;
     }
-
-    disableScrollLock();
   };
 })();
