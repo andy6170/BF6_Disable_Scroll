@@ -1,7 +1,7 @@
 {
   "id": "bf-portal-disable-scrolling",
   "name": "BF6 Disable Scrolling",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "description": "Disables scrolling to prevent accidental page scrolling when using the editor",
   "main": "index.js",
   "author": "andy6170"
